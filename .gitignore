@@ -1,0 +1,39 @@
+# Virtual environment folders
+retina_env/
+venv/
+
+# Bytecode files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Compiled object files
+*.so
+*.pyd
+*.dll
+*.dylib
+
+# Log files and system files
+*.log
+.DS_Store
+
+# Model files
+*.h5
+*.hdf5
+*.keras
+
+# VSCode/IDE config
+.vscode/
+.idea/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Build and dist
+build/
+dist/
+*.egg-info/
+
+# Environment files
+.env
+.env.*

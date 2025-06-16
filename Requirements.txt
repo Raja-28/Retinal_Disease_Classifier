@@ -1,0 +1,13 @@
+# Backend
+fastapi
+uvicorn
+tensorflow
+pillow
+numpy
+python-multipart
+
+# Frontend
+streamlit
+opencv-python
+matplotlib
+scikit-learn
