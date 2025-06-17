@@ -9,9 +9,10 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 # Backend API URL
 API_URL = "http://127.0.0.1:8000/predict"
 
+# Class labels
 class_names = ['No DR', 'Mild', 'Moderate', 'Severe', 'Proliferative DR']
 
-# Streamlit page config
+# Streamlit config
 st.set_page_config(page_title="Retinal Disease Classifier", layout="wide")
 st.sidebar.title("🧭 Navigation")
 st.sidebar.info("Upload a retina image to detect diabetic retinopathy stage.")
@@ -19,25 +20,27 @@ st.sidebar.info("Upload a retina image to detect diabetic retinopathy stage.")
 st.title("👁️ Retinal Disease Classifier")
 st.write("This app uses a FastAPI backend with a deep learning model to classify retina images into 5 stages of diabetic retinopathy.")
 
-# Preprocess image locally for Grad-CAM visualization
+# Local preprocessing (for Grad-CAM overlay only)
 def preprocess_image(image: Image.Image):
     image = image.resize((224, 224))
     img_array = np.array(image) / 255.0
-    return np.expand_dims(img_array, axis=0), np.array(image.resize((224, 224)))
+    return np.expand_dims(img_array, axis=0), np.array(image)
 
-# Main Upload Section
+# File upload
 uploaded_file = st.file_uploader("📤 Upload a retina image (JPG/PNG)", type=["jpg", "png"])
 if uploaded_file:
     image = Image.open(uploaded_file).convert('RGB')
     st.image(image, caption="🔍 Input Image", use_container_width=True)
 
-    with st.spinner("🔍 Sending image to backend model..."):
-        response = requests.post(
-            API_URL,
-            files={"file": uploaded_file.getvalue()}
-        )
+    # --- Prediction request ---
+    try:
+        with st.spinner("🔍 Sending image to backend model..."):
+            response = requests.post(
+                API_URL,
+                files = {"file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)}
+            )
+            response.raise_for_status()
 
-    if response.status_code == 200:
         result = response.json()
         prediction = result['prediction']
         confidence = float(result['confidence'].replace('%', '')) / 100
@@ -45,10 +48,13 @@ if uploaded_file:
         st.markdown(f"### 🩺 **Prediction**: `{prediction}`")
         st.markdown(f"### 🎯 **Confidence**: `{confidence * 100:.2f}%`")
         st.progress(confidence)
-    else:
-        st.error("❌ Failed to get prediction from backend.")
 
-    # Optional local Grad-CAM (dummy heatmap since model is backend)
+    except requests.exceptions.RequestException as e:
+        st.error(f"❌ Failed to get prediction from backend.\n\n`{e}`")
+    except Exception as e:
+        st.error(f"⚠️ Unexpected error.\n\n`{e}`")
+
+    # --- Simulated Grad-CAM ---
     st.markdown("### 🔥 Grad-CAM (Simulated Overlay)")
     _, img_display = preprocess_image(image)
     dummy_heatmap = np.random.uniform(0, 1, (224, 224))  # Replace with real Grad-CAM if needed
@@ -59,7 +65,7 @@ if uploaded_file:
 
     st.image(overlay, caption="Simulated Grad-CAM", use_container_width=True)
 
-# Confusion Matrix Section
+# --- Optional Confusion Matrix ---
 st.markdown("---")
 if st.button("📈 Show Example Confusion Matrix"):
     st.markdown("### 🧮 Confusion Matrix (Sampled Data)")
@@ -72,7 +78,7 @@ if st.button("📈 Show Example Confusion Matrix"):
     disp.plot(ax=ax, cmap='Blues', colorbar=False)
     st.pyplot(fig)
 
-# Footer
+# --- Footer ---
 st.sidebar.markdown("---")
 st.sidebar.markdown("👨‍⚕️ Created for AI Hackathon")
 st.sidebar.caption("Frontend: Streamlit | Backend: FastAPI + TensorFlow")
